@@ -1,41 +1,82 @@
-image: gitpod/workspace-java-11
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
 
-tasks:
-  # Bootstrap: install Flink 1.17.1, export PATH, start cluster + extra TMs
-  - name: Bootstrap / Flink
-    before: |
-      chmod +x ./install_flink.sh
-      ./install_flink.sh
-      export PATH="$PATH:/workspace/flink-demo/flink-1.17.1/bin"
-      start-cluster.sh
-      taskmanager.sh start
-      taskmanager.sh start
-      taskmanager.sh start
-      exit
+  <groupId>com.globomantics</groupId>
+  <artifactId>flink-unique-clicks</artifactId>
+  <version>1.0.0</version>
 
-  # Open the Flink UI (port 8081) in a preview tab
-  - name: Flink UI
-    command: gp preview http://localhost:8081 && exit
+  <properties>
+    <!-- Target Java 11 to match the Gitpod base image -->
+    <maven.compiler.release>11</maven.compiler.release>
+    <flink.version>1.17.1</flink.version>
+    <flink.kafka.version>1.17.1</flink.kafka.version>
+    <jackson.version>2.17.1</jackson.version>
+  </properties>
 
-  # Build & submit your job JAR
-  - name: Build & Submit Job
-    command: |
-      export PATH="$PATH:/workspace/flink-demo/flink-1.17.1/bin"
-      mvn -q -DskipTests package
-      flink run -c com.globomantics.UniqueAdClickAggregator target/flink-unique-clicks-1.0.0-shaded.jar
+  <dependencies>
+    <!-- Flink job APIs (provided by the runtime) -->
+    <dependency>
+      <groupId>org.apache.flink</groupId>
+      <artifactId>flink-streaming-java</artifactId>
+      <version>${flink.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.flink</groupId>
+      <artifactId>flink-clients</artifactId>
+      <version>${flink.version}</version>
+      <scope>provided</scope>
+    </dependency>
 
-  # (Optional) Producer/Consumer panes you can use as scratch shells
-  - name: Kafka Producer
-    command: bash
-  - name: Kafka Consumer
-    command: bash
+    <!-- Kafka connector compatible with Flink 1.17.x -->
+    <dependency>
+      <groupId>org.apache.flink</groupId>
+      <artifactId>flink-connector-kafka</artifactId>
+      <version>${flink.kafka.version}</version>
+    </dependency>
 
-ports:
-  - port: 8081
-    onOpen: ignore
+    <!-- JSON parsing -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>${jackson.version}</version>
+    </dependency>
+  </dependencies>
 
-vscode:
-  extensions:
-    - vscjava.vscode-java-pack
+  <build>
+    <plugins>
+      <!-- Compiler plugin (locks to Java 11) -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.13.0</version>
+        <configuration>
+          <release>11</release>
+        </configuration>
+      </plugin>
 
-workspaceLocation: /workspace/flink-demo
+      <!-- Shade to produce a single runnable JAR -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.5.1</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals><goal>shade</goal></goals>
+            <configuration>
+              <createDependencyReducedPom>false</createDependencyReducedPom>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>com.globomantics.UniqueAdClickAggregator</mainClass>
+                </transformer>
+              </transformers>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>
