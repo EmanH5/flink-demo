@@ -1,46 +1,34 @@
 image: gitpod/workspace-java-11
 
 tasks:
-  # 1) Bootstrap terminal: install JDK 17, Maven, Confluent CLI; download & configure Flink; start cluster + extra TMs
+  # Bootstrap: install Flink 1.17.1, export PATH, start cluster + extra TMs
   - name: Bootstrap / Flink
     before: |
       chmod +x ./install_flink.sh
       ./install_flink.sh
-      export FLINK_HOME="$PWD/flink-2.0.0"
-      export PATH="$PATH:$FLINK_HOME/bin"
+      export PATH="$PATH:/workspace/flink-demo/flink-1.17.1/bin"
       start-cluster.sh
-      # add a couple extra TaskManagers (like your example)
+      taskmanager.sh start
       taskmanager.sh start
       taskmanager.sh start
       exit
 
-  # 2) Preview the Flink UI (same behavior as your example)
+  # Open the Flink UI (port 8081) in a preview tab
   - name: Flink UI
     command: gp preview http://localhost:8081 && exit
 
-  # 3) Build & submit the job (runs `mvn package` then `flink run`)
+  # Build & submit your job JAR
   - name: Build & Submit Job
     command: |
-      export FLINK_HOME="$PWD/flink-2.0.0"
-      export PATH="$PATH:$FLINK_HOME/bin"
+      export PATH="$PATH:/workspace/flink-demo/flink-1.17.1/bin"
       mvn -q -DskipTests package
       flink run -c com.globomantics.UniqueAdClickAggregator target/flink-unique-clicks-1.0.0-shaded.jar
 
-  # 5) Producer pane for ad-clicks
-  - name: Ad Click Producer
-    command: |
-      echo "Login once with: confluent login --save"
-      echo "Then select env & cluster with: confluent environment use <env-id> && confluent kafka cluster use <lkc-id>"
-      echo "Producing to ad-clicks (Ctrl+C to exit). Paste JSON lines..."
-      confluent kafka topic produce ad-clicks --value-format json
-
-  # 6) Consumer pane for ad-agg
-  - name: Aggregates Consumer
-    command: |
-      echo "Login once with: confluent login --save"
-      echo "Then select env & cluster with: confluent environment use <env-id> && confluent kafka cluster use <lkc-id>"
-      echo "Consuming from ad-agg (Ctrl+C to exit)..."
-      confluent kafka topic consume ad-agg --from-beginning
+  # (Optional) Producer/Consumer panes you can use as scratch shells
+  - name: Kafka Producer
+    command: bash
+  - name: Kafka Consumer
+    command: bash
 
 ports:
   - port: 8081
@@ -49,3 +37,5 @@ ports:
 vscode:
   extensions:
     - vscjava.vscode-java-pack
+
+workspaceLocation: /workspace/flink-demo
