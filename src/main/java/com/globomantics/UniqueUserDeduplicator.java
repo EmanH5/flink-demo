@@ -9,6 +9,7 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.functions.KeyedProcessFunction;
 import org.apache.flink.util.Collector;
 
+/** Drops duplicate userIds per adId using keyed state (with a 24h TTL). */
 public class UniqueUserDeduplicator extends KeyedProcessFunction<String, ClickEvent, ClickEvent> {
   private transient MapState<String, Boolean> seenUsers;
 
@@ -17,9 +18,7 @@ public class UniqueUserDeduplicator extends KeyedProcessFunction<String, ClickEv
     MapStateDescriptor<String, Boolean> desc =
         new MapStateDescriptor<>("seenUsers", Types.STRING, Types.BOOLEAN);
 
-    // Optional TTL to curb unbounded growth
-    StateTtlConfig ttl = StateTtlConfig
-        .newBuilder(Time.days(1))
+    StateTtlConfig ttl = StateTtlConfig.newBuilder(Time.days(1))
         .setUpdateType(StateTtlConfig.UpdateType.OnCreateAndWrite)
         .build();
     desc.enableTimeToLive(ttl);
@@ -32,7 +31,7 @@ public class UniqueUserDeduplicator extends KeyedProcessFunction<String, ClickEv
     final String user = e.getUserId();
     if (!seenUsers.contains(user)) {
       seenUsers.put(user, true);
-      out.collect(e); // first click per (adId,userId)
+      out.collect(e);
     }
   }
 }
