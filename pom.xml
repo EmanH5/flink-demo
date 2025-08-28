@@ -8,15 +8,12 @@
   <version>1.0.0</version>
 
   <properties>
-    <!-- Target Java 11 to match the Gitpod base image -->
-    <maven.compiler.release>11</maven.compiler.release>
-    <flink.version>1.17.1</flink.version>
-    <flink.kafka.version>1.17.1</flink.kafka.version>
-    <jackson.version>2.17.1</jackson.version>
+    <maven.compiler.release>17</maven.compiler.release>
+    <flink.version>2.0.0</flink.version>
   </properties>
 
   <dependencies>
-    <!-- Flink job APIs (provided by the runtime) -->
+    <!-- Flink APIs provided by the runtime -->
     <dependency>
       <groupId>org.apache.flink</groupId>
       <artifactId>flink-streaming-java</artifactId>
@@ -30,34 +27,25 @@
       <scope>provided</scope>
     </dependency>
 
-    <!-- Kafka connector compatible with Flink 1.17.x -->
+    <!-- Filesystem connector for FileSink -->
     <dependency>
       <groupId>org.apache.flink</groupId>
-      <artifactId>flink-connector-kafka</artifactId>
-      <version>${flink.kafka.version}</version>
-    </dependency>
-
-    <!-- JSON parsing -->
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-databind</artifactId>
-      <version>${jackson.version}</version>
+      <artifactId>flink-connector-files</artifactId>
+      <version>${flink.version}</version>
     </dependency>
   </dependencies>
 
   <build>
     <plugins>
-      <!-- Compiler plugin (locks to Java 11) -->
+      <!-- Java 17 -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.13.0</version>
-        <configuration>
-          <release>11</release>
-        </configuration>
+        <configuration><release>17</release></configuration>
       </plugin>
 
-      <!-- Shade to produce a single runnable JAR -->
+      <!-- Fat JAR with the correct main class -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
