@@ -1,34 +1,30 @@
-image: gitpod/workspace-java-11
+image: gitpod/workspace-java-17
 
 tasks:
-  # Bootstrap: install Flink 1.17.1, export PATH, start cluster + extra TMs
   - name: Bootstrap / Flink
     before: |
       chmod +x ./install_flink.sh
       ./install_flink.sh
-      export PATH="$PATH:/workspace/flink-demo/flink-1.17.1/bin"
+      export PATH="$PATH:/workspace/flink-demo/flink-2.0.0/bin"
       start-cluster.sh
       taskmanager.sh start
       taskmanager.sh start
       taskmanager.sh start
       exit
 
-  # Open the Flink UI (port 8081) in a preview tab
   - name: Flink UI
     command: gp preview http://localhost:8081 && exit
 
-  # Build & submit your job JAR
   - name: Build & Submit Job
     command: |
-      export PATH="$PATH:/workspace/flink-demo/flink-1.17.1/bin"
-      mvn -q -DskipTests package
-      flink run -c com.globomantics.UniqueAdClickAggregator target/flink-unique-clicks-1.0.0-shaded.jar
+      export PATH="$PATH:/workspace/flink-demo/flink-2.0.0/bin"
+      mvn -q -DskipTests clean package
+      flink run -c com.globomantics.UniqueAdClickAggregator target/flink-unique-clicks-1.0.0-shaded.jar out
 
-  # (Optional) Producer/Consumer panes you can use as scratch shells
-  - name: Kafka Producer
-    command: bash
-  - name: Kafka Consumer
-    command: bash
+  - name: Tail Results
+    command: |
+      echo "Tailing files in ./out (finalized on checkpoints)..."
+      bash -lc 'mkdir -p out && tail -F out/* 2>/dev/null || true'
 
 ports:
   - port: 8081
